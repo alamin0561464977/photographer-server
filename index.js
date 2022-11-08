@@ -16,7 +16,7 @@ app.get('/', (req, res) => {
 // ==============================================================================
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.db_user_name}:${process.env.db_user_password}@cluster0.blopt.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
@@ -24,6 +24,7 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 async function run() {
     try {
         const servicesCollection = client.db("photographer").collection("services");
+        const serviceReviewCollection = client.db("photographer").collection("service-review");
 
         app.get('/services', async (req, res) => {
             const services = await servicesCollection.find({}).limit(3).toArray();
@@ -32,6 +33,18 @@ async function run() {
         app.get('/services-all', async (req, res) => {
             const services = await servicesCollection.find({}).toArray();
             res.send(services);
+        });
+        app.get('/service-details/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const serviceDetails = await servicesCollection.findOne(filter);
+            res.send(serviceDetails);
+        });
+
+        app.post('/service-review', async (req, res) => {
+            const result = await serviceReviewCollection.insertOne(req.body);
+            console.log(result);
+            res.send(result);
         })
 
     }
