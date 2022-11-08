@@ -26,6 +26,10 @@ async function run() {
         const servicesCollection = client.db("photographer").collection("services");
 
         app.get('/services', async (req, res) => {
+            const services = await servicesCollection.find({}).limit(3).toArray();
+            res.send(services);
+        })
+        app.get('/services-all', async (req, res) => {
             const services = await servicesCollection.find({}).toArray();
             res.send(services);
         })
