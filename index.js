@@ -44,7 +44,14 @@ async function run() {
             const services_id = req.params.id;
             const filter = { details_id: services_id };
             const reviews = await serviceReviewCollection.find(filter).toArray();
-            res.send(s = reviews);
+            res.send(reviews);
+        });
+        app.get('/my-review', async (req, res) => {
+            const email = req.query.email;
+            console.log(email)
+            const filter = { email: email };
+            const myReviews = await serviceReviewCollection.find(filter).toArray();
+            res.send(myReviews);
         })
 
         app.post('/service-review', async (req, res) => {
