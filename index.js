@@ -40,6 +40,12 @@ async function run() {
             const serviceDetails = await servicesCollection.findOne(filter);
             res.send(serviceDetails);
         });
+        app.get('/review/:id', async (req, res) => {
+            const services_id = req.params.id;
+            const filter = { details_id: services_id };
+            const reviews = await serviceReviewCollection.find(filter).toArray();
+            res.send(s = reviews);
+        })
 
         app.post('/service-review', async (req, res) => {
             const result = await serviceReviewCollection.insertOne(req.body);
