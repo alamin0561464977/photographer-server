@@ -48,21 +48,38 @@ async function run() {
         });
         app.get('/my-review', async (req, res) => {
             const email = req.query.email;
-            console.log(email)
             const filter = { email: email };
             const myReviews = await serviceReviewCollection.find(filter).toArray();
             res.send(myReviews);
+        });
+        app.get('/rreview/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const review = await serviceReviewCollection.findOne(filter);
+            console.log(review)
+            res.send(review)
         })
 
         app.post('/service-review', async (req, res) => {
             const result = await serviceReviewCollection.insertOne(req.body);
-            console.log(result);
             res.send(result);
         });
         app.post('/add-service', async (req, res) => {
             const service = req.body;
             const result = await servicesCollection.insertOne(service);
         });
+
+        app.put('/update-review/:id', async (req, res) => {
+            const id = req.params.id;
+            const review = req.body;
+            const filter = { _id: ObjectId(id) };
+            const option = { upsert: true };
+            const updateReview = { $set: review };
+            const result = await serviceReviewCollection.updateOne(filter, updateReview, option);
+            console.log(result);
+            res.send(result);
+
+        })
 
         app.delete('/delete-review', async (req, res) => {
             const id = req.headers.id;
@@ -83,19 +100,4 @@ run().catch(err => console.log(err))
 app.listen(port, () => {
     console.log('Photographer Project Running on Port', port)
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
