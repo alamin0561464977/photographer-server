@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 require("dotenv").config();
+const jwt = require('jsonwebtoken');
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -12,6 +13,23 @@ app.get('/', (req, res) => {
     res.send('Photographer Project Running')
 });
 
+
+function verifyJWT(req, res, next) {
+    const headers = req.headers.authorization;
+    console.log(headers)
+
+    if (!headers) {
+        return res.status(401).send('unauthorized access (401)');
+    }
+    const token = headers.split(' ')[1];
+    jwt.verify(token, process.env.jwt_token, (error, decoded) => {
+        if (error) {
+            return res.status(403).send('unauthorized access (403)');
+        };
+        req.decoded = decoded;
+    });
+    next();
+}
 
 // ==============================================================================
 
@@ -25,6 +43,13 @@ async function run() {
     try {
         const servicesCollection = client.db("photographer").collection("services");
         const serviceReviewCollection = client.db("photographer").collection("service-review");
+
+        app.post('/jwt', (req, res) => {
+            const email = req.body;
+            const token = jwt.sign(email, process.env.jwt_token, { expiresIn: '1h' });
+            console.log(email, token)
+            res.send({ token })
+        })
 
         app.get('/services', async (req, res) => {
             const services = await servicesCollection.find({}).limit(3).toArray();
@@ -46,8 +71,12 @@ async function run() {
             const reviews = await serviceReviewCollection.find(filter).toArray();
             res.send(reviews);
         });
-        app.get('/my-review', async (req, res) => {
+        app.get('/my-review', verifyJWT, async (req, res) => {
             const email = req.query.email;
+            const id = req.params.id;
+            if (req.decoded.email !== email) {
+                res.status(403).send('unauthorized access (403)')
+            }
             const filter = { email: email };
             const myReviews = await serviceReviewCollection.find(filter).toArray();
             res.send(myReviews);
@@ -56,7 +85,6 @@ async function run() {
             const id = req.params.id;
             const filter = { _id: ObjectId(id) };
             const review = await serviceReviewCollection.findOne(filter);
-            console.log(review)
             res.send(review)
         })
 
@@ -64,9 +92,10 @@ async function run() {
             const result = await serviceReviewCollection.insertOne(req.body);
             res.send(result);
         });
-        app.post('/add-service', async (req, res) => {
+        app.post('/add-service', verifyJWT, async (req, res) => {
             const service = req.body;
             const result = await servicesCollection.insertOne(service);
+            res.send(result);
         });
 
         app.put('/update-review/:id', async (req, res) => {
@@ -76,10 +105,9 @@ async function run() {
             const option = { upsert: true };
             const updateReview = { $set: review };
             const result = await serviceReviewCollection.updateOne(filter, updateReview, option);
-            console.log(result);
             res.send(result);
 
-        })
+        });
 
         app.delete('/delete-review', async (req, res) => {
             const id = req.headers.id;
